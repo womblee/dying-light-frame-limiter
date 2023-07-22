@@ -3,8 +3,10 @@ This piece of software lets you avoid damage in certain animations, which can co
 
 ![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/a32a5040-1572-4570-b1e3-db4cb7ea380c)
 
+For example, in this clip I got hit with a two-handed weapon and **received like only 30 damage**, when in a normal situation **I should receive 120**...
+
 # Is it counted as 'LEGIT'?
-Yes, it's fully legit. The only thing it does is handles when to freeze/unfreeze the process.
+Yes, it's **fully legit**. The only thing it does is handles when to suspend/resume the process.
 
 # How can I use it?
 For example, you miss a tackle and there is a guy trying to hit you with a 2-handed weapon...
