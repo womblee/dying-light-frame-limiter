@@ -1,5 +1,7 @@
-![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/a32a5040-1572-4570-b1e3-db4cb7ea380c)# Frame Limiter For Dying Light 1
+# Frame Limiter For Dying Light 1
 This piece of software lets you avoid damage in certain animations, which can come in pretty handy in PVP!
+
+![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/a32a5040-1572-4570-b1e3-db4cb7ea380c)
 
 # Is it counted as 'LEGIT'?
 Yes, it's fully legit. The only thing it does is handles when to freeze/unfreeze the process.
