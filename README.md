@@ -1,4 +1,4 @@
-# Frame Limiter For Dying Light 1
+![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/a32a5040-1572-4570-b1e3-db4cb7ea380c)# Frame Limiter For Dying Light 1
 This piece of software lets you avoid damage in certain animations, which can come in pretty handy in PVP!
 
 # Is it counted as 'LEGIT'?
@@ -9,7 +9,7 @@ For example, you miss a tackle and there is a guy trying to hit you with a 2-han
 
 You just hold down the Freeze Lag button for some time and you will receive minimal damage since you're still in animation because of the lag.
 
-![Alt Text](https://files.catbox.moe/k92fli.gif)
+![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/f6213fed-6186-40f1-ad10-46308943e371)
 
 # Screenshots
 ![image](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/2d9c34c2-e4e2-4190-9844-99a4f84186d6)
