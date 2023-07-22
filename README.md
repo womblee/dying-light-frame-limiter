@@ -11,8 +11,6 @@ For example, you miss a tackle and there is a guy trying to hit you with a 2-han
 
 You just hold down the Freeze Lag button for some time and you will receive minimal damage since you're still in animation because of the lag.
 
-![ezgif-2-97c0459635](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/f6213fed-6186-40f1-ad10-46308943e371)
-
 # Screenshots
 ![image](https://github.com/womblee/dying-light-frame-limiter/assets/52250786/2d9c34c2-e4e2-4190-9844-99a4f84186d6)
 
