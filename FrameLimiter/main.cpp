@@ -82,7 +82,7 @@ void main()
     SetConsoleTitleA("Frame Limiter");
 
     // Get ID
-    DWORD game = get(L"DyingLightGame.exe");
+    DWORD game = get(L"BadBloodGame.exe");
     
     if (game == 0)
     {
