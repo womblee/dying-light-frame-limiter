@@ -1,139 +1,141 @@
 ﻿#include <Windows.h>
 #include <TlHelp32.h>
 #include <cstdio>
+#include <stdexcept>
+#include <string>
+#include <memory>
 
-// Utilities
-typedef LONG(NTAPI* NtSuspendProcess)(IN HANDLE ProcessHandle);
-typedef LONG(NTAPI* NtResumeProcess)(IN HANDLE ProcessHandle);
+// Typedefs for function pointers
+using NtSuspendProcess = LONG(NTAPI*)(IN HANDLE ProcessHandle);
+using NtResumeProcess = LONG(NTAPI*)(IN HANDLE ProcessHandle);
 
+// Global function pointers
 NtSuspendProcess dSuspendProcess = nullptr;
 NtResumeProcess dResumeProcess = nullptr;
 
-// Get process
-DWORD get(LPCTSTR name)
+// RAII wrapper for HANDLE
+class ScopedHandle
+{
+    HANDLE handle;
+public:
+    explicit ScopedHandle(HANDLE h) : handle(h) {}
+    ~ScopedHandle() { if (handle != INVALID_HANDLE_VALUE) CloseHandle(handle); }
+    HANDLE get() const { return handle; }
+    ScopedHandle(const ScopedHandle&) = delete;
+    ScopedHandle& operator=(const ScopedHandle&) = delete;
+};
+
+// Check if process is running
+bool is_running(DWORD process_id)
+{
+    ScopedHandle proc(OpenProcess(SYNCHRONIZE, FALSE, process_id));
+    if (proc.get() == nullptr) return false;
+
+    return WaitForSingleObject(proc.get(), 0) == WAIT_TIMEOUT;
+}
+
+// Get process ID by name
+DWORD get_process_id(const std::wstring& name)
 {
     PROCESSENTRY32 pt;
-    HANDLE hsnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     pt.dwSize = sizeof(PROCESSENTRY32);
+    ScopedHandle hsnap(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0));
+    if (hsnap.get() == INVALID_HANDLE_VALUE) throw std::runtime_error("CreateToolhelp32Snapshot failed");
 
-    if (Process32First(hsnap, &pt))
+    if (Process32First(hsnap.get(), &pt))
     {
         do
         {
-            if (!lstrcmpi(pt.szExeFile, name))
-            {
-                CloseHandle(hsnap);
-
-                return pt.th32ProcessID;
-            }
-        } while (Process32Next(hsnap, &pt));
+            if (name == pt.szExeFile) return pt.th32ProcessID;
+        } while (Process32Next(hsnap.get(), &pt));
     }
-
-    CloseHandle(hsnap);
     return 0;
 }
 
-// Handling process
-void handle(int type, int process)
+// Handle process operations
+void handle_process(int operation, DWORD process_id)
 {
-    HANDLE h = OpenProcess(PROCESS_ALL_ACCESS, FALSE, process);
+    ScopedHandle h(OpenProcess(PROCESS_ALL_ACCESS, FALSE, process_id));
+    if (h.get() == nullptr) return;
 
-    if (h == nullptr)
-        return;
-
-    switch (type)
+    switch (operation)
     {
-    case 1:
-        dSuspendProcess(h);
-
-        break;
-    case 2:
-        dResumeProcess(h);
-
-        break;
+    case 1: dSuspendProcess(h.get()); break;
+    case 2: dResumeProcess(h.get()); break;
     }
-
-    CloseHandle(h);
 }
 
-// Init
+// Initialize function pointers
 void init()
 {
-    // Load NtSuspendProcess from ntdll.dll
     HMODULE ntmod = GetModuleHandleA("ntdll");
+    if (!ntmod) throw std::runtime_error("Failed to get ntdll handle");
 
-    dSuspendProcess = (NtSuspendProcess)GetProcAddress(ntmod, "NtSuspendProcess");
-    dResumeProcess = (NtResumeProcess)GetProcAddress(ntmod, "NtResumeProcess");
+    dSuspendProcess = reinterpret_cast<NtSuspendProcess>(GetProcAddress(ntmod, "NtSuspendProcess"));
+    dResumeProcess = reinterpret_cast<NtResumeProcess>(GetProcAddress(ntmod, "NtResumeProcess"));
 
-    // Congratulations
-    printf("RIGHT CONTROL - Freeze Lag, INSERT - Quit\n[Miscellaneous: PAGE UP - Freeze process | PAGE DOWN - Unfreeze process]\n\nMade with love by nloginov @ 2023");
+    if (!dSuspendProcess || !dResumeProcess) throw std::runtime_error("Failed to get process functions");
+
+    printf("RIGHT CONTROL - Freeze Lag, INSERT - Quit\n"
+        "[Miscellaneous: PAGE UP - Freeze process | PAGE DOWN - Unfreeze process]\n\n"
+        "Made with love by nloginov @ 2023\n");
 }
 
-// Main
-void main()
+int main()
 {
-    // Allocate console
-    AllocConsole();
-    AttachConsole(GetCurrentProcessId());
-    FILE* out{};
-    freopen_s(&out, "CONOUT$", "w", stdout);
-
-    // Console title
-    SetConsoleTitleA("Frame Limiter");
-
-    // Get ID
-    DWORD game = get(L"DyingLightGame.exe");
-    
-    if (game == 0)
+    try
     {
-        // What a pity
-        printf("Couldn't find game process...\n");
+        // Allocate console
+        AllocConsole();
+        AttachConsole(GetCurrentProcessId());
+        FILE* out{};
+        freopen_s(&out, "CONOUT$", "w", stdout);
 
-        // Let that sink in...
-        Sleep(3000);
+        // Console title
+        SetConsoleTitleA("Frame Limiter");
 
-        // Return
-        return;
-    }
+        // Initialize
+        init();
 
-    // Initialize
-    init();
+        const std::wstring PROCESS_NAME = L"DyingLightGame.exe";
+        constexpr ULONGLONG FREEZE_INTERVAL = 150;
 
-    // Binds
-    ULONGLONG last_use = GetTickCount64();
-
-    // Infinite loop which we can break...
-    while (true)
-    {
-        // INSERT for quit, obviously
-        if (GetAsyncKeyState(VK_INSERT))
-            break;
-        else if (GetAsyncKeyState(VK_NEXT)) // Page Down
-            handle(2, game);
-        else if (GetAsyncKeyState(VK_PRIOR)) // Page Up
-            handle(1, game);
-        else if (GetAsyncKeyState(VK_RCONTROL)) // Right control
+        while (true)
         {
-            if (last_use - GetTickCount64() > 150)
+            DWORD game_pid = get_process_id(PROCESS_NAME);
+            if (!game_pid)
             {
-                // Suspend
-                handle(1, game);
+                Sleep(1000); // Wait before trying again
+                continue;
+            }
 
-                // Wait
-                Sleep(150);
+            ULONGLONG last_use = GetTickCount64();
 
-                // Resume
-                handle(2, game);
-                    
-                // Update timer
-                last_use = GetTickCount64();
+            while (is_running(game_pid))
+            {
+                if (GetAsyncKeyState(VK_INSERT) & 0x8000) return 0;
+                if (GetAsyncKeyState(VK_NEXT) & 0x8000) handle_process(2, game_pid);
+                if (GetAsyncKeyState(VK_PRIOR) & 0x8000) handle_process(1, game_pid);
+
+                if (GetAsyncKeyState(VK_RCONTROL) & 0x8000) {
+                    ULONGLONG current = GetTickCount64();
+                    if (current - last_use > FREEZE_INTERVAL) {
+                        handle_process(1, game_pid);
+                        Sleep(FREEZE_INTERVAL);
+                        handle_process(2, game_pid);
+                        last_use = current;
+                    }
+                }
+
+                Sleep(10); // Reduce CPU usage
             }
         }
     }
-    
-    // Goodbye
-    printf("Farewell!");
+    catch (const std::exception& e)
+    {
+        MessageBoxA(NULL, e.what(), "Error", MB_ICONERROR);
+    }
 
-    // Free
     FreeConsole();
+    return 0;
 }

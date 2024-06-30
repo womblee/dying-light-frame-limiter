@@ -140,7 +140,7 @@
     <ResourceCompile Include="FrameLimiter.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="..\..\..\..\Downloads\nest_rusher.ico" />
+    <Image Include="nest_rusher.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
